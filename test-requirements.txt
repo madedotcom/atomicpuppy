@@ -1,4 +1,4 @@
-HTTPretty==0.8.10
+HTTPretty==0.9.6
 git+https://github.com/damiansoriano/Contexts@4ad390aa4f514eff94b8ef43f6da0b404e42e1a7#egg=Contexts
 fakeredis==0.6.1
 freezegun==0.3.3
