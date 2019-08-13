@@ -35,13 +35,12 @@ class FakeHttp:
                 writer=Mock(),
                 timer=TimerNoop(),
                 continue100=None,
-                request_info=Mock(),
-                auto_decompress=True,                
+                request_info=Mock(),           
                 traces=[],
                 loop=self._loop,
                 session=Mock()
             )
-            resp.headers = {
+            resp._headers = {
                 'Content-Type': 'application/json'
             }
 
@@ -74,7 +73,6 @@ class FakeHttp:
                 timer=TimerNoop(),
                 continue100=None,
                 request_info=Mock(),
-                auto_decompress=True,
                 traces=[],
                 loop=self._loop,
                 session=Mock()

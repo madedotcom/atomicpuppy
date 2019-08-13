@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "aiohttp==3.1.3",
+    "aiohttp==3.3.0",
     "chardet==3.0.4", # latest
     "gevent==1.4.0", # latest
     "greenlet==0.4.15", # latest
