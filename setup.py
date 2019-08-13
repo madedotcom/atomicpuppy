@@ -7,7 +7,7 @@ install_requires = [
     "greenlet==0.4.15", # latest
     "pybreaker==0.5.0", # latest
     "PyYAML==5.1.2",  # latest
-    "redis==2.10.5",
+    "redis==3.3.6",
     "retrying==1.3.3", # latest
     "requests==2.22.0", # latest
     "yarl==0.13.0"
@@ -15,7 +15,7 @@ install_requires = [
 
 tests_require = [
     "Contexts",
-    "fakeredis==0.6.1",
+    "fakeredis",
     "freezegun==0.3.12", # latest
     "HTTPretty"
 ]
@@ -30,7 +30,8 @@ setup(
     packages=find_packages(),
     dependency_links=[
         "git+https://github.com/OddBloke/HTTPretty.git@f899d1bda8234658c2cec5aab027cb5b7c42203c#egg=HTTPretty"
-        "git+https://github.com/damiansoriano/Contexts.git@4ad390aa4f514eff94b8ef43f6da0b404e42e1a7#egg=Contexts"
+        "git+https://github.com/damiansoriano/Contexts.git@4ad390aa4f514eff94b8ef43f6da0b404e42e1a7#egg=Contexts",
+        "git+https://github.com/jamesls/fakeredis.git@d675ee1d6c4ac7a3bb0129f916232c0f2c6e9dd5#egg=fakeredis"
     ],
     install_requires=install_requires,
     tests_require=tests_require,

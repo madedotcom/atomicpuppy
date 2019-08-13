@@ -18,13 +18,14 @@ class When_redis_contains_no_information_for_a_stream:
 class When_redis_contains_a_last_read_value_for_a_stream:
 
     last_read = 92837
-
+    
     def given_a_redis_instance_with_a_last_read_event(self):
-        self.redis = fakeredis.FakeStrictRedis()
+        self.redis_server = fakeredis.FakeServer()
+        self.redis = fakeredis.FakeStrictRedis(server=self.redis_server)
         self.redis.set('urn:atomicpuppy:fred:my-stream:position', self.last_read)
 
     def it_should_return_the_last_read_value(self):
-        ctr = FakeRedisCounter(instance="fred")
+        ctr = FakeRedisCounter(instance="fred", redis=self.redis)
         assert(ctr["my-stream"] == self.last_read)
 
     def cleanup_redis(self):
