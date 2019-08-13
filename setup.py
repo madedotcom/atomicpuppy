@@ -1,16 +1,15 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "aiohttp==2.2.3",
+    "aiohttp==2.3.10",
     "chardet==3.0.4", # latest
     "gevent==1.4.0", # latest
     "greenlet==0.4.15", # latest
     "pybreaker==0.5.0", # latest
     "PyYAML==5.1.2",  # latest
-    "redis==3.3.6",
+    "redis==3.3.6", # latest
     "retrying==1.3.3", # latest
     "requests==2.22.0", # latest
-    "yarl==0.13.0"
 ]
 
 tests_require = [
