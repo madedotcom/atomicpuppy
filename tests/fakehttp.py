@@ -1,4 +1,5 @@
 from aiohttp.client import ClientResponse
+from aiohttp.helpers import TimerNoop
 from collections import deque, defaultdict
 from unittest.mock import Mock
 import asyncio
@@ -28,7 +29,18 @@ class FakeHttp:
                     fut.set_result(f.read().encode('utf-8'))
                 return fut
 
-            resp = ClientResponse('GET', yarl.URL(uri))
+            resp = ClientResponse(
+                'GET', 
+                yarl.URL(uri),
+                writer=Mock(),
+                timer=TimerNoop(),
+                continue100=None,
+                request_info=Mock(),
+                auto_decompress=True,                
+                traces=[],
+                loop=self._loop,
+                session=Mock()
+            )
             resp.headers = {
                 'Content-Type': 'application/json'
             }
@@ -55,7 +67,18 @@ class FakeHttp:
     def registerEmptyUri(self, uri, status):
         def cb():
             fut = asyncio.Future(loop=self._loop)
-            resp = ClientResponse('GET', yarl.URL('foo'))
+            resp = ClientResponse(
+                'GET', 
+                yarl.URL('foo'),
+                writer=Mock(),
+                timer=TimerNoop(),
+                continue100=None,
+                request_info=Mock(),
+                auto_decompress=True,
+                traces=[],
+                loop=self._loop,
+                session=Mock()
+                )
             resp.status = status
             fut.set_result(resp)
             return fut
