@@ -4,6 +4,7 @@ from collections import deque, defaultdict
 from unittest.mock import Mock
 import asyncio
 import functools
+import http
 import logging
 
 import yarl
@@ -78,6 +79,11 @@ class FakeHttp:
                 session=Mock()
                 )
             resp.status = status
+
+            # setting this as aiohttp 3.5.4 is now checking if this value is not None
+            # see aiohttp/client_reqrep.py:934
+            resp.reason = http.client.responses[status]
+
             fut.set_result(resp)
             return fut
         self._callbacks[uri].append(cb)
