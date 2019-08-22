@@ -62,13 +62,15 @@ SubscriptionConfig = namedtuple('SubscriptionConfig', ['streams',
 
 class Event:
 
-    def __init__(self, id, type, data, stream, sequence, metadata={}):
+    def __init__(self, id, type, data, stream, sequence, metadata=None):
         self.id = id
         self.type = type
         self.data = data
         self.stream = stream
         self.sequence = sequence
         self._location = None
+        if metadata is None:
+            metadata = {}
         self.metadata = metadata
 
     @property
