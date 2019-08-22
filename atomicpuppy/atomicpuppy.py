@@ -62,13 +62,14 @@ SubscriptionConfig = namedtuple('SubscriptionConfig', ['streams',
 
 class Event:
 
-    def __init__(self, id, type, data, stream, sequence):
+    def __init__(self, id, type, data, stream, sequence, metadata={}):
         self.id = id
         self.type = type
         self.data = data
         self.stream = stream
         self.sequence = sequence
         self._location = None
+        self.metadata = metadata
 
     @property
     def location(self):
@@ -87,12 +88,13 @@ class Event:
         return self._location
 
     def __str__(self):
-        return "{}/{}-{} ({}): {}".format(
+        return "{}/{}-{} ({}): {} {}".format(
             self.stream,
             self.type,
             self.sequence,
             self.id,
-            self.data
+            self.data,
+            self.metadata
         )
 
 
@@ -206,11 +208,17 @@ class Page:
                 "Failed to parse json data for %s message %s",
                 e.get("eventType"), e.get("eventId"))
             return None
+        try:
+            metadata = json.loads(e["metadata"], encoding='UTF-8')
+        except KeyError:
+            metadata = {}
+
         type = e["eventType"]
         id = UUID(e["eventId"])
         stream = e["positionStreamId"]
         sequence = e["positionEventNumber"]
-        return Event(id, type, data, stream, sequence)
+
+        return Event(id, type, data, stream, sequence, metadata)
 
 
 class StreamReader:
@@ -729,7 +737,7 @@ class EventStoreJsonEncoder(json.JSONEncoder):
             if(isinstance(o, UUID)):
                 return str(o)
             return json.JSONEncoder.default(self, o)
-        except e:
+        except Exception:
             logging.error(type(o))
 
 
@@ -743,7 +751,7 @@ class EventPublisher:
            retry_on_result=lambda r: r.status_code >= 500)
     def post(self, event, correlation_id=None):
         uri = 'http://{}/streams/{}'.format(self._es_url, event.stream)
-        headers = {'ES-EventType': str(event.type), 'ES-EventId': str(event.id), 'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/vnd.eventstore.events+json'}
         extra = dict(event.__dict__)
         extra.update(headers)
         extra.update({
@@ -753,10 +761,19 @@ class EventPublisher:
         self._logger.info("Posting event {} to {}. Headers: {}".format(event.__dict__, uri, headers), extra=extra)
         if(correlation_id):
             event.data["correlation_id"] = correlation_id
+
+        data = (
+            {
+                "eventId": event.id,
+                "eventType": event.type,
+                "data": event.data,
+                "metadata": event.metadata,
+            },
+        )
         r = requests.post(
             uri,
             headers=headers,
-            data=EventStoreJsonEncoder().encode(event.data),
+            data=EventStoreJsonEncoder().encode(data),
             timeout=0.5)
         if r.status_code:
             extra.update({
