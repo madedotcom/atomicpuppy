@@ -9,13 +9,6 @@ from atomicpuppy import Event, EventPublisher
 SCRIPT_PATH = os.path.dirname(__file__)
 
 
-class TestConfig:
-
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-
-
 class When_a_message_is_posted:
 
     stream = str(uuid4())
@@ -24,8 +17,7 @@ class When_a_message_is_posted:
     _port = 42
 
     def given_a_publisher(self):
-        cfg = TestConfig('fakehost', '42')
-        self.publisher = EventPublisher(cfg.host, cfg.port)
+        self.publisher = EventPublisher(self._host, self._port)
 
     @httpretty.activate
     def because_an_event_is_published_on_a_stream(self):
@@ -64,8 +56,7 @@ class When_a_message_is_posted_to_eventstore:
     _port = 2113
 
     def given_a_publisher(self):
-        cfg = TestConfig(self._host, self._port)
-        self.publisher = EventPublisher(cfg.host, cfg.port)
+        self.publisher = EventPublisher(self._host, self._port)
 
     @httpretty.activate
     def because_an_event_is_published_on_a_stream(self):
@@ -104,8 +95,7 @@ class When_a_message_is_posted_to_eventstore_no_metadata:
     _port = 2113
 
     def given_a_publisher(self):
-        cfg = TestConfig(self._host, self._port)
-        self.publisher = EventPublisher(cfg.host, cfg.port)
+        self.publisher = EventPublisher(self._host, self._port)
 
     @httpretty.activate
     def because_an_event_is_published_on_a_stream(self):
