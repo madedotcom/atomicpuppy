@@ -69,9 +69,7 @@ class Event:
         self.stream = stream
         self.sequence = sequence
         self._location = None
-        if metadata is None:
-            metadata = {}
-        self.metadata = metadata
+        self.metadata = metadata or {}
 
     @property
     def location(self):
