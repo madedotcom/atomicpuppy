@@ -1,5 +1,6 @@
 HTTPretty==0.8.10
-git+https://github.com/damiansoriano/Contexts@4ad390aa4f514eff94b8ef43f6da0b404e42e1a7#egg=Contexts
-fakeredis==0.6.1
-freezegun==0.3.3
-tox==2.3.1
+fakeredis==1.0.4
+freezegun==0.3.12
+tox==3.13.2
+
+git+https://github.com/madedotcom/Contexts.git@15d1649d5768188443bdd37920a6181982682e0a#egg=Contexts

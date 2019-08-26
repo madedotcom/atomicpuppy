@@ -26,7 +26,7 @@ class When_an_event_is_processed:
 
     def because_we_add_a_message(self):
         msg = Event(self.message_id, "type", {}, "stream", self.sequence_no)
-        asyncio.async(self.send_message(msg), loop=self._loop)
+        asyncio.ensure_future(self.send_message(msg), loop=self._loop)
         self._loop.run_until_complete(self.message_processor.start())
 
     def it_should_have_sent_the_message(self):
@@ -64,7 +64,7 @@ class When_an_event_is_processed_by_running_once:
 
     def because_we_add_a_message(self):
         msg = Event(self.message_id, "type", {}, "stream", self.sequence_no)
-        asyncio.async(self.send_message(msg), loop=self._loop)
+        asyncio.ensure_future(self.send_message(msg), loop=self._loop)
         self._loop.run_until_complete(self.message_processor.consume_events())
 
     def it_should_have_sent_the_message(self):
@@ -102,7 +102,7 @@ class When_a_message_is_rejected:
     def because_we_process_a_message(self):
         with(self._log.capture()):
             msg = Event(self.message_id, "message-type", {}, "stream", 2)
-            asyncio.async(self.send_message(msg), loop=self._loop)
+            asyncio.ensure_future(self.send_message(msg), loop=self._loop)
             self._loop.run_until_complete(self.event_raiser.start())
 
     def it_should_log_a_warning(self):
@@ -140,7 +140,7 @@ class When_a_message_raises_an_unhandled_exception:
     def because_we_process_a_message(self):
         with(self._log.capture()):
             msg = Event(self.message_id, "message-type", {}, "stream", 2)
-            asyncio.async(self.send_message(msg), loop=self._loop)
+            asyncio.ensure_future(self.send_message(msg), loop=self._loop)
             self._loop.run_until_complete(self.event_raiser.start())
 
     def it_should_log_an_error(self):
@@ -188,7 +188,7 @@ class When_the_callback_is_asynchronous:
     def because_we_process_a_message(self):
         with(self._log.capture()):
             msg = Event(self.message_id, "message-type", {}, "stream", 2)
-            asyncio.async(self.send_message(msg), loop=self._loop)
+            asyncio.ensure_future(self.send_message(msg), loop=self._loop)
             self._loop.run_until_complete(self.event_raiser.start())
 
     def it_should_have_exhausted_the_callback(self):
@@ -230,7 +230,7 @@ class When_an_asynchronous_callback_fails:
     def because_we_process_a_message(self):
         with(self._log.capture()):
             msg = Event(self.message_id, "message-type", {}, "stream", 2)
-            asyncio.async(self.send_message(msg), loop=self._loop)
+            asyncio.ensure_future(self.send_message(msg), loop=self._loop)
             self._loop.run_until_complete(self.event_raiser.start())
 
     def the_exception_should_be_logged(self):

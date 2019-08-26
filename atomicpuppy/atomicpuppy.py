@@ -615,9 +615,9 @@ class StreamConfigReader:
             cfg = config_file.get('atomicpuppy')
         elif isinstance(config_file, str):
             with open(config_file) as file:
-                cfg = yaml.load(file).get('atomicpuppy')
+                cfg = yaml.load(file, yaml.SafeLoader).get('atomicpuppy')
         else:
-            cfg = yaml.load(config_file).get('atomicpuppy')
+            cfg = yaml.load(config_file, yaml.SafeLoader).get('atomicpuppy')
 
 
         streams = []
