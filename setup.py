@@ -14,9 +14,9 @@ install_requires = [
 
 tests_require = [
     "Contexts",
-    "fakeredis",
+    "fakeredis==1.0.4",
     "freezegun==0.3.12",
-    "HTTPretty"
+    "HTTPretty==0.8.10",
 ]
 
 extras = {
@@ -28,9 +28,7 @@ setup(
     version="0.7.0",
     packages=find_packages(),
     dependency_links=[
-        "git+https://github.com/OddBloke/HTTPretty.git@f899d1bda8234658c2cec5aab027cb5b7c42203c#egg=HTTPretty"
-        "git+https://github.com/damiansoriano/Contexts.git@4ad390aa4f514eff94b8ef43f6da0b404e42e1a7#egg=Contexts",
-        "git+https://github.com/jamesls/fakeredis.git@d675ee1d6c4ac7a3bb0129f916232c0f2c6e9dd5#egg=fakeredis"
+        "git+https://github.com/madedotcom/Contexts.git@15d1649d5768188443bdd37920a6181982682e0a#egg=Contexts",
     ],
     install_requires=install_requires,
     tests_require=tests_require,
