@@ -18,7 +18,7 @@ from concurrent.futures import TimeoutError
 SCRIPT_PATH = os.path.dirname(__file__)
 
 
-class FakeRequestContext (_RequestContextManager):
+class FakeRequestContext(_RequestContextManager):
 
     def __init__(self, coro):
         self.coro = coro
