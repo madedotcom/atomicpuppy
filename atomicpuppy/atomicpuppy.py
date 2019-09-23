@@ -44,10 +44,11 @@ import yaml
 
 from atomicpuppy.errors import (
     HttpClientError,
-    RejectedMessageException,
-    UrlError,
     HttpNotFoundError,
+    InvalidDataException,
+    RejectedMessageException,
     StreamNotFoundError,
+    UrlError,
 )
 
 
@@ -749,35 +750,62 @@ class EventPublisher:
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
-    def post(self, event, correlation_id=None):
-        uri = 'http://{}/streams/{}'.format(self._es_url, event.stream)
+    def post(self, events, correlation_id=None):
+
+        if isinstance(events, Event):
+            events = [events]
+
+        if not all(events[0].stream == event.stream for event in events):
+            msg = "All events in the POST have to be for the same stream"
+            self._logger.warn(msg)
+            raise InvalidDataException(msg)
+
+        events_count = len(events)
+
+        uri = 'http://{}/streams/{}'.format(self._es_url, events[0].stream)
         headers = {'Content-Type': 'application/vnd.eventstore.events+json'}
-        extra = dict(event.__dict__)
+        extra = {}
         extra.update(headers)
         extra.update({
             'es_uri': uri,
-            'method': 'POST'
+            'method': 'POST',
+            'events_count': events_count,
         })
-        self._logger.info("Posting event {} to {}. Headers: {}".format(event.__dict__, uri, headers), extra=extra)
-        if(correlation_id):
-            event.data["correlation_id"] = correlation_id
-
-        data = (
-            {
-                "eventId": event.id,
-                "eventType": event.type,
-                "data": event.data,
-                "metadata": event.metadata,
-            },
+        self._logger.info(
+            "Posting {} event(s) to {}. Headers: {}".format(
+                events_count, uri, headers,
+            ),
+            extra=extra,
         )
+
+        data = []
+        for event in events:
+            if correlation_id:
+                event.data["correlation_id"] = correlation_id
+
+            data.append(
+                {
+                    "eventId": event.id,
+                    "eventType": event.type,
+                    "data": event.data,
+                    "metadata": event.metadata,
+                },
+            )
+
         r = requests.post(
             uri,
             headers=headers,
             data=EventStoreJsonEncoder().encode(data),
-            timeout=0.5)
+            timeout=0.5,
+        )
+
         if r.status_code:
             extra.update({
                 'status_code': r.status_code
             })
-            self._logger.info("Received status code {status_code} from EventStore POST.".format(**extra), extra=extra)
+            self._logger.info(
+                "Received status code {status_code} from EventStore POST.".format(**extra),
+                extra=extra,
+            )
+
         return r

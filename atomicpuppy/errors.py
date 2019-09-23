@@ -34,3 +34,7 @@ class StreamNotFoundError(Exception):
 
 class RejectedMessageException(Exception):
     pass
+
+
+class InvalidDataException(Exception):
+    pass
