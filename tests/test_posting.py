@@ -53,6 +53,7 @@ class When_a_message_is_posted_to_eventstore:
 
     stream = str(uuid4())
     event_id = str(uuid4())
+    correlation_id = str(uuid4())
     _host = 'localhost'
     _port = 2113
 
@@ -68,7 +69,15 @@ class When_a_message_is_posted_to_eventstore:
 
         data = {'foo': 'bar'}
         metadata = {'lorem': 'ipsum'}
-        evt = Event(self.event_id, 'my-event-type', data, self.stream, None, metadata)
+        evt = Event(
+            id=self.event_id,
+            type='my-event-type',
+            data=data,
+            stream=self.stream,
+            sequence=None,
+            metadata=metadata,
+            correlation_id=self.correlation_id,
+        )
         self.publisher.post(evt)
         self.response_body = json.loads(httpretty.last_request().body.decode())[0]
 
@@ -84,6 +93,9 @@ class When_a_message_is_posted_to_eventstore:
     def it_should_have_sent_the_correct_body(self):
         assert(self.response_body["data"] == {"foo": "bar"})
 
+    def it_should_have_sent_the_correct_correlation_id(self):
+        assert(self.response_body["correlation_id"] == self.correlation_id)
+
     def it_should_have_sent_the_correct_metadata(self):
         assert(self.response_body["metadata"] == {"lorem": "ipsum"})
 
@@ -92,6 +104,7 @@ class When_a_message_is_posted_to_eventstore_no_metadata:
 
     stream = str(uuid4())
     event_id = str(uuid4())
+    correlation_id = str(uuid4())
     _host = 'localhost'
     _port = 2113
 
@@ -106,7 +119,15 @@ class When_a_message_is_posted_to_eventstore_no_metadata:
             body='{}')
 
         data = {'foo': 'bar'}
-        evt = Event(self.event_id, 'my-event-type', data, self.stream, None)
+        evt = Event(
+            id=self.event_id,
+            type='my-event-type',
+            data=data,
+            stream=self.stream,
+            sequence=None,
+            metadata=None,
+            correlation_id=self.correlation_id,
+        )
         self.publisher.post(evt)
         self.response_body = json.loads(httpretty.last_request().body.decode())[0]
 
@@ -122,6 +143,9 @@ class When_a_message_is_posted_to_eventstore_no_metadata:
     def it_should_have_sent_the_correct_body(self):
         assert(self.response_body["data"] == {"foo": "bar"})
 
+    def it_should_have_sent_the_correct_correlation_id(self):
+        assert(self.response_body["correlation_id"] == self.correlation_id)
+
     def it_should_have_empty_metadata(self):
         assert(self.response_body["metadata"] == {})
 
@@ -130,6 +154,10 @@ class When_multiple_events_are_posted_to_eventstore_in_batch:
     stream = str(uuid4())
     event1_id = str(uuid4())
     event2_id = str(uuid4())
+
+    # do not set it to test we're not generating a new one just before the POST
+    correlation_id1 = None
+    correlation_id2 = str(uuid4())
     _host = 'localhost'
     _port = 2113
 
@@ -144,8 +172,24 @@ class When_multiple_events_are_posted_to_eventstore_in_batch:
             body='{}')
 
         events = [
-            Event(self.event1_id, 'my-event-type', {'foo': 'bar'}, self.stream, None),
-            Event(self.event2_id, 'my-event-type', {'foo2': 'bar2'}, self.stream, None),
+            Event(
+                id=self.event1_id,
+                type='my-event-type',
+                data={'foo': 'bar'},
+                stream=self.stream,
+                sequence=None,
+                metadata=None,
+                correlation_id=self.correlation_id1,
+            ),
+            Event(
+                id=self.event2_id,
+                type='my-event-type',
+                data={'foo2': 'bar2'},
+                stream=self.stream,
+                sequence=None,
+                metadata=None,
+                correlation_id=self.correlation_id2,
+            ),
         ]
         self.publisher.post(events)
         self.response_body = json.loads(httpretty.last_request().body.decode())
@@ -168,6 +212,10 @@ class When_multiple_events_are_posted_to_eventstore_in_batch:
         assert(self.response_body[0]["data"] == {"foo": "bar"})
         assert(self.response_body[1]["data"] == {"foo2": "bar2"})
 
+    def it_should_have_sent_the_correct_correlation_id(self):
+        assert(self.response_body[0]["correlation_id"] == self.correlation_id1)
+        assert(self.response_body[1]["correlation_id"] == self.correlation_id2)
+
 
 class When_multiple_events_for_different_streams_are_posted_to_eventstore_in_batch:
     stream1 = str(uuid4())
@@ -189,8 +237,22 @@ class When_multiple_events_for_different_streams_are_posted_to_eventstore_in_bat
             body='{}')
 
         events = [
-            Event(self.event1_id, 'my-event-type', {'foo': 'bar'}, self.stream1, None),
-            Event(self.event2_id, 'my-event-type', {'foo2': 'bar2'}, self.stream2, None),
+            Event(
+                id=self.event1_id,
+                type='my-event-type',
+                data={'foo': 'bar'},
+                stream=self.stream1,
+                sequence=None,
+                metadata=None,
+            ),
+            Event(
+                id=self.event2_id,
+                type='my-event-type',
+                data={'foo2': 'bar2'},
+                stream=self.stream2,
+                sequence=None,
+                metadata=None,
+            ),
         ]
         try:
             self.publisher.post(events)

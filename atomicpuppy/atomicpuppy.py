@@ -63,7 +63,7 @@ SubscriptionConfig = namedtuple('SubscriptionConfig', ['streams',
 
 class Event:
 
-    def __init__(self, id, type, data, stream, sequence, metadata=None):
+    def __init__(self, id, type, data, stream, sequence, metadata=None, correlation_id=None):
         self.id = id
         self.type = type
         self.data = data
@@ -71,6 +71,7 @@ class Event:
         self.sequence = sequence
         self._location = None
         self.metadata = metadata or {}
+        self.correlation_id = correlation_id
 
     @property
     def location(self):
@@ -750,15 +751,12 @@ class EventPublisher:
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
-    def post(self, events, correlation_id=None):
-
+    def post(self, events):
         if isinstance(events, Event):
             events = [events]
 
         if not all(events[0].stream == event.stream for event in events):
-            msg = "All events in the POST have to be for the same stream"
-            self._logger.warn(msg)
-            raise InvalidDataException(msg)
+            raise InvalidDataException("All events in the POST have to be for the same stream")
 
         events_count = len(events)
 
@@ -780,15 +778,13 @@ class EventPublisher:
 
         data = []
         for event in events:
-            if correlation_id:
-                event.data["correlation_id"] = correlation_id
-
             data.append(
                 {
                     "eventId": event.id,
                     "eventType": event.type,
                     "data": event.data,
                     "metadata": event.metadata,
+                    "correlation_id": event.correlation_id,
                 },
             )
 
