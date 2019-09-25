@@ -751,10 +751,15 @@ class EventPublisher:
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
-    def post(self, events):
-        if isinstance(events, Event):
-            events = [events]
+    def post(self, event):
+        return self.batch_create([event])
 
+    @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
+           retry_on_result=lambda r: r.status_code >= 500)
+    def post_multiple(self, events):
+        return self.batch_create(events)
+
+    def batch_create(self, events):
         if not all(events[0].stream == event.stream for event in events):
             raise InvalidDataException("All events in the POST have to be for the same stream")
 
@@ -762,7 +767,7 @@ class EventPublisher:
 
         uri = 'http://{}/streams/{}'.format(self._es_url, events[0].stream)
         headers = {'Content-Type': 'application/vnd.eventstore.events+json'}
-        extra = {}
+        extra = {'stream': events[0].stream}
         extra.update(headers)
         extra.update({
             'es_uri': uri,
@@ -778,13 +783,14 @@ class EventPublisher:
 
         data = []
         for event in events:
+            if event.correlation_id:
+                event.data["correlation_id"] = event.correlation_id
             data.append(
                 {
                     "eventId": event.id,
                     "eventType": event.type,
                     "data": event.data,
                     "metadata": event.metadata,
-                    "correlation_id": event.correlation_id,
                 },
             )
 
@@ -793,6 +799,11 @@ class EventPublisher:
             headers=headers,
             data=EventStoreJsonEncoder().encode(data),
             timeout=0.5,
+        )
+
+        self._logger.debug(
+            "Posting events {} to {}. Headers: {}".format([e.__dict__ for e in events], uri, headers),
+            extra=extra,
         )
 
         if r.status_code:

@@ -91,10 +91,7 @@ class When_a_message_is_posted_to_eventstore:
         assert(self.response_body["eventType"] == 'my-event-type')
 
     def it_should_have_sent_the_correct_body(self):
-        assert(self.response_body["data"] == {"foo": "bar"})
-
-    def it_should_have_sent_the_correct_correlation_id(self):
-        assert(self.response_body["correlation_id"] == self.correlation_id)
+        assert(self.response_body["data"] == {"foo": "bar", "correlation_id": self.correlation_id})
 
     def it_should_have_sent_the_correct_metadata(self):
         assert(self.response_body["metadata"] == {"lorem": "ipsum"})
@@ -141,10 +138,7 @@ class When_a_message_is_posted_to_eventstore_no_metadata:
         assert(self.response_body["eventType"] == 'my-event-type')
 
     def it_should_have_sent_the_correct_body(self):
-        assert(self.response_body["data"] == {"foo": "bar"})
-
-    def it_should_have_sent_the_correct_correlation_id(self):
-        assert(self.response_body["correlation_id"] == self.correlation_id)
+        assert(self.response_body["data"] == {"foo": "bar", "correlation_id": self.correlation_id})
 
     def it_should_have_empty_metadata(self):
         assert(self.response_body["metadata"] == {})
@@ -191,7 +185,7 @@ class When_multiple_events_are_posted_to_eventstore_in_batch:
                 correlation_id=self.correlation_id2,
             ),
         ]
-        self.publisher.post(events)
+        self.publisher.post_multiple(events)
         self.response_body = json.loads(httpretty.last_request().body.decode())
 
     def it_should_be_a_POST(self):
@@ -210,11 +204,7 @@ class When_multiple_events_are_posted_to_eventstore_in_batch:
 
     def it_should_have_sent_the_correct_body(self):
         assert(self.response_body[0]["data"] == {"foo": "bar"})
-        assert(self.response_body[1]["data"] == {"foo2": "bar2"})
-
-    def it_should_have_sent_the_correct_correlation_id(self):
-        assert(self.response_body[0]["correlation_id"] == self.correlation_id1)
-        assert(self.response_body[1]["correlation_id"] == self.correlation_id2)
+        assert(self.response_body[1]["data"] == {"foo2": "bar2", "correlation_id": self.correlation_id2})
 
 
 class When_multiple_events_for_different_streams_are_posted_to_eventstore_in_batch:
@@ -255,7 +245,7 @@ class When_multiple_events_for_different_streams_are_posted_to_eventstore_in_bat
             ),
         ]
         try:
-            self.publisher.post(events)
+            self.publisher.post_multiple(events)
         except InvalidDataException:
             self.invalid_data_exception_raised = True
             return
