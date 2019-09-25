@@ -76,9 +76,8 @@ class When_a_message_is_posted_to_eventstore:
             stream=self.stream,
             sequence=None,
             metadata=metadata,
-            correlation_id=self.correlation_id,
         )
-        self.publisher.post(evt)
+        self.publisher.post(evt, correlation_id=self.correlation_id)
         self.response_body = json.loads(httpretty.last_request().body.decode())[0]
 
     def it_should_be_a_POST(self):
@@ -123,9 +122,8 @@ class When_a_message_is_posted_to_eventstore_no_metadata:
             stream=self.stream,
             sequence=None,
             metadata=None,
-            correlation_id=self.correlation_id,
         )
-        self.publisher.post(evt)
+        self.publisher.post(evt, correlation_id=self.correlation_id)
         self.response_body = json.loads(httpretty.last_request().body.decode())[0]
 
     def it_should_be_a_POST(self):
