@@ -753,8 +753,7 @@ class EventPublisher:
            retry_on_result=lambda r: r.status_code >= 500)
     def post(self, event, correlation_id=None):
         if correlation_id:
-            event.data["correlation_id"] = correlation_id
-
+            event.correlation_id = correlation_id
         return self.batch_create([event])
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
