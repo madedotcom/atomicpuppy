@@ -6,3 +6,5 @@ dist
 .tox/
 *.swp
 .ropeproject/
+venv/
+
