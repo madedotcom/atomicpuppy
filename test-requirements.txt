@@ -1,4 +1,4 @@
-HTTPretty==0.8.10
+HTTPretty==0.9.7
 fakeredis==1.0.4
 freezegun==0.3.12
 tox==3.13.2
