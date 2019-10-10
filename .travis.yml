@@ -9,3 +9,12 @@ install:
   - "pip install -r test-requirements.txt"
 # command to run tests
 script: run-contexts --verbose ./tests 2>/dev/null
+deploy:
+  provider: pypi
+  user: bobthemighty
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: madedotcom/atomicpuppy
+  password:
+    secure: Zu90Q3qZ+sA1/ZzsNu/2+RTRIojg8UKRoUqVEHlKbCZ2M5fxfBLNa17hf4RybuHSW66YNdUMoEbvCJeJMnRLMTZdwMkCEGyukZsIsHPE75wbu4EEZNQHwn12Ku4bxtHwNoctomkbnxyQvCIwJLOPNZz8o4BWGGyQjDi4ix2V7p4QFaWNHOsFIAJ1ni4nZuYDxhR+ZX/vWWCeEW9VYY8nY49fiC4XsbY9S7ReNkSDVMy05JQ8/2XeBYO3Ky20BlrvbcvpzApvLbbKH6Cp+NcbjqQrmiW4uvfmFnV3J9af+a2m6vBfqGb7ggAjYAT+AKs8AwT1nHAbCbGqJo5OV8B6QZk2rVs7azRXac+kYnshjwi1y5Ldpks8vT1ZRHeCh5BIwlfMPxw6qYxGto492yLjgXW9VlhkmIfBRcENJCgoDTEPjQGRT41VaXZTYkpZsf59l9szFiSho1D3/IRY1ALc7da8LKavqi/C8LmM1OsHkzwGJDSAW7EjBN2GIEcTA9Ht6bPyyy5Wx47gGuFgj0gp7cz9UEP9CriFdVw5xN8Q2pS9qm+UEr+H0PnyoKwZSHHs3+gYPxxEUMqMX2SVXD9nJ1SkkTSqCNVyr0x+jeOrGVSiDVVJ4hjy0enksYHGRkeCCMAdHyYWRGDyeoCswZFJZPYb1Eub54yX8Ns7PecA5dE=
