@@ -11,7 +11,7 @@ install:
 script: run-contexts --verbose ./tests 2>/dev/null
 deploy:
   provider: pypi
-  user: epoplavskis
+  user: __token__
   on:
     tags: true
     distributions: sdist bdist_wheel
