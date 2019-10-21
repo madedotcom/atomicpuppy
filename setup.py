@@ -26,9 +26,6 @@ setup(
     name="AtomicPuppy",
     version="0.7.2",
     packages=find_packages(),
-    dependency_links=[
-        "git+https://github.com/madedotcom/Contexts.git@15d1649d5768188443bdd37920a6181982682e0a#egg=Contexts",
-    ],
     install_requires=install_requires,
     tests_require=tests_require,
     url='https://github.com/madedotcom/atomicpuppy',
