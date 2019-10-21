@@ -1,5 +1,5 @@
 Contexts
-HTTPretty
+HTTPretty==0.8.10
 fakeredis
 freezegun
 tox
