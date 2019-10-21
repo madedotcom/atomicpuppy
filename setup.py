@@ -1,22 +1,21 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "aiohttp==3.5.4",
-    "chardet==3.0.4",
-    "gevent==1.4.0",
-    "greenlet==0.4.15",
-    "pybreaker==0.5.0",
-    "PyYAML==5.1.2",
-    "redis==3.3.6",
-    "retrying==1.3.3",
-    "requests==2.22.0",
+    "aiohttp",
+    "chardet",
+    "gevent",
+    "pybreaker",
+    "PyYAML",
+    "redis",
+    "retrying",
+    "requests",
 ]
 
 tests_require = [
     "Contexts",
-    "fakeredis==1.0.4",
-    "freezegun==0.3.12",
-    "HTTPretty==0.8.10",
+    "fakeredis",
+    "freezegun",
+    "HTTPretty",
 ]
 
 extras = {
