@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "aiohttp==3.5.4",
+    "aiohttp>=3.6,<3.7",
     "chardet==3.0.4",
     "gevent==1.4.0",
     "greenlet==0.4.15",
@@ -25,7 +25,7 @@ extras = {
 
 setup(
     name="AtomicPuppy",
-    version="0.7.2",
+    version="1.0",
     packages=find_packages(),
     dependency_links=[
         "git+https://github.com/madedotcom/Contexts.git@15d1649d5768188443bdd37920a6181982682e0a#egg=Contexts",

@@ -13,7 +13,6 @@ from .fakehttp import FakeHttp, SpyLog
 from .fakes import FakeRedisCounter
 
 from aiohttp.client import _RequestContextManager
-from concurrent.futures import TimeoutError
 
 SCRIPT_PATH = os.path.dirname(__file__)
 
@@ -25,7 +24,7 @@ class FakeRequestContext(_RequestContextManager):
 
     async def __aenter__(self):
          self._resp = await self.coro
-         print(self.coro)
+         print(self._resp)
          self._resp.raise_for_status()
          return self._resp
 
@@ -685,7 +684,7 @@ class When_a_disconnection_error_occurs_during_fetch(StreamReaderContext):
 
 
 def fail_with_timeout():
-    raise TimeoutError()
+    raise asyncio.TimeoutError()
 
 
 class When_a_timeout_error_occurs_during_fetch(StreamReaderContext):

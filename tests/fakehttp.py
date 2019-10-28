@@ -31,12 +31,12 @@ class FakeHttp:
                 return fut
 
             resp = ClientResponse(
-                'GET', 
+                'GET',
                 yarl.URL(uri),
                 writer=Mock(),
                 timer=TimerNoop(),
                 continue100=None,
-                request_info=Mock(),           
+                request_info=Mock(),
                 traces=[],
                 loop=self._loop,
                 session=Mock()
@@ -68,7 +68,7 @@ class FakeHttp:
         def cb():
             fut = asyncio.Future(loop=self._loop)
             resp = ClientResponse(
-                'GET', 
+                'GET',
                 yarl.URL('foo'),
                 writer=Mock(),
                 timer=TimerNoop(),
@@ -123,11 +123,10 @@ class FakeHttp:
         reduced = functools.reduce(accumulate, deques, [])
         return len(reduced) == 0
 
-    @asyncio.coroutine
-    def respond(self, uri):
-        if(self._callbacks[uri]):
+    async def respond(self, uri):
+        if self._callbacks[uri]:
             cb = self._callbacks[uri].popleft()
-            return cb()
+            return await cb()
         elif self._error_on_exhausted and self._noMoreRegisteredRequests():
             raise Exception("No more expected requests are queued for any URI")
         print("No response registered for uri "+uri)
