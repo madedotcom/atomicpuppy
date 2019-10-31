@@ -1,5 +1,5 @@
 Contexts
 HTTPretty==0.8.10
 fakeredis
-freezegun
+freezegun==0.3.12
 tox
