@@ -35,9 +35,8 @@ class When_an_event_is_processed:
     def it_should_have_recorded_the_event(self):
         assert(self.event_recorder["stream"] == self.sequence_no)
 
-    @asyncio.coroutine
-    def send_message(self, e):
-        yield from self.queue.put(e)
+    async def send_message(self, e):
+        return await self.queue.put(e)
 
     def process_message(self, e):
         self.the_message = e
@@ -73,9 +72,8 @@ class When_an_event_is_processed_by_running_once:
     def it_should_have_recorded_the_event(self):
         assert(self.event_recorder["stream"] == self.sequence_no)
 
-    @asyncio.coroutine
-    def send_message(self, e):
-        yield from self.queue.put(e)
+    async def send_message(self, e):
+        return await self.queue.put(e)
 
     def process_message(self, e):
         self.the_message = e
@@ -114,9 +112,8 @@ class When_a_message_is_rejected:
         self.event_raiser.stop()
         raise RejectedMessageException()
 
-    @asyncio.coroutine
-    def send_message(self, e):
-        yield from self.queue.put(e)
+    async def send_message(self, e):
+        return await self.queue.put(e)
 
 
 class When_a_message_raises_an_unhandled_exception:
@@ -151,9 +148,8 @@ class When_a_message_raises_an_unhandled_exception:
         self.event_raiser.stop()
         raise NotImplemented("This handler is not here")
 
-    @asyncio.coroutine
-    def send_message(self, e):
-        yield from self.queue.put(e)
+    async def send_message(self, e):
+        return await self.queue.put(e)
 
 
 class When_the_callback_is_asynchronous:
@@ -167,12 +163,9 @@ class When_the_callback_is_asynchronous:
         events = {}
         self.callback_exhausted = [False]
 
-        @asyncio.coroutine
-        def async_callback(evt):
+        async def async_callback(evt):
             self.event_raiser.stop()
-            yield
             self.callback_exhausted[0] = True
-            return
 
         self.event_raiser = EventRaiser(
             queue=self.queue,
@@ -181,9 +174,8 @@ class When_the_callback_is_asynchronous:
             loop=self._loop
         )
 
-    @asyncio.coroutine
-    def send_message(self, e):
-        yield from self.queue.put(e)
+    async def send_message(self, e):
+        return await self.queue.put(e)
 
     def because_we_process_a_message(self):
         with(self._log.capture()):
@@ -209,12 +201,9 @@ class When_an_asynchronous_callback_fails:
         class Failure(Exception):
             pass
 
-        @asyncio.coroutine
-        def async_callback(evt):
+        async def async_callback(evt):
             self.event_raiser.stop()
-            yield
             raise Failure()
-            return
 
         self.event_raiser = EventRaiser(
             queue=self.queue,
@@ -223,9 +212,8 @@ class When_an_asynchronous_callback_fails:
             loop=self._loop
         )
 
-    @asyncio.coroutine
-    def send_message(self, e):
-        yield from self.queue.put(e)
+    async def send_message(self, e):
+        return await self.queue.put(e)
 
     def because_we_process_a_message(self):
         with(self._log.capture()):

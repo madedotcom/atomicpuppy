@@ -24,7 +24,7 @@ extras = {
 
 setup(
     name="AtomicPuppy",
-    version="0.8",
+    version="1.1",
     packages=find_packages(),
     install_requires=install_requires,
     tests_require=tests_require,
