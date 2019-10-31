@@ -1,4 +1,4 @@
-Contexts
+Contexts==0.12
 HTTPretty==0.8.10
 fakeredis
 freezegun
