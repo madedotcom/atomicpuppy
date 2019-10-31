@@ -15,7 +15,7 @@ tests_require = [
     "Contexts",
     "fakeredis",
     "freezegun",
-    "HTTPretty",
+    "HTTPretty==0.8.10",
 ]
 
 extras = {
