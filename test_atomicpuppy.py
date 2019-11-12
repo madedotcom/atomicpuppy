@@ -70,6 +70,10 @@ class AtomicPuppyContext:
             password=None,
             stream_to_look_in='otherstream',
             expect_exceptions=()):
+
+        def handler(msg):
+            self.events.append(msg)
+
         config = {
             'streams': [stream_to_look_in],
             'host': self._host,
@@ -80,16 +84,13 @@ class AtomicPuppyContext:
 
         self.events = []
 
-        def handler(msg):
-            self.events.append(msg)
-
         with patch('aiohttp.ClientSession') as mock:
             mock.return_value = FakeClientSession(self.http, username=username, password=password)
             ap = AtomicPuppy({'atomicpuppy': config}, handler, self.loop, username, password)
             self._log = SpyLog()
             with(self._log.capture()):
                 try:
-                    self.loop.run_until_complete(ap.start())
+                    self.loop.run_until_complete(asyncio.wait_for(ap.start(), 2))
                 except expect_exceptions as exc:
                     raise exc
                     self.exc = exc
