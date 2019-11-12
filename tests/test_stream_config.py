@@ -1,6 +1,7 @@
 import io
 from atomicpuppy.atomicpuppy import *
 import platform
+from unittest.mock import MagicMock
 
 
 class When_reading_a_config_file:
@@ -172,6 +173,7 @@ class When_the_counter_config_is_invalid:
 
     def because_we_read_the_file(self):
         self.reader = StreamConfigReader()
+        self.reader._logger = MagicMock()
         with self._file as f:
             try:
                 self.result = self.reader.read(f)

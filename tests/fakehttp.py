@@ -12,10 +12,19 @@ import yarl
 
 class FakeHttp:
 
-    def __init__(self, loop):
+    def __init__(self, loop, username=None, password=None):
         self._loop = loop
+
+        if username != None and password != None:
+            self.auth = username+password
+        else:
+            self.auth=None
+
         self._callbacks = defaultdict(deque)
         self._error_on_exhausted = False
+
+    def registerServerCredentials(self, username, password):
+        self.auth = username+password
 
     def registerJsonUris(self, registrations):
         for uri, fn in registrations.items():
@@ -46,6 +55,7 @@ class FakeHttp:
             }
 
             resp.status = status
+            resp.reason = Mock()
             resp.content = Mock()
             resp.content.read.side_effect = read
             resp.close = Mock()
@@ -123,7 +133,11 @@ class FakeHttp:
         reduced = functools.reduce(accumulate, deques, [])
         return len(reduced) == 0
 
-    async def respond(self, uri):
+    async def respond(self, uri, auth=None):
+        
+        if auth != self.auth:
+            return await self._make_response(uri, status=401)()
+
         if self._callbacks[uri]:
             cb = self._callbacks[uri].popleft()
             return await cb()

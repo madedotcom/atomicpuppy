@@ -1,5 +1,6 @@
-Contexts
+Contexts==0.12
 HTTPretty==0.8.10
-fakeredis
-freezegun
-tox
+fakeredis==1.0.5
+freezegun==0.3.12
+tox==3.14.0
+coverage==4.5.4
