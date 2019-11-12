@@ -2,4 +2,4 @@ Contexts
 HTTPretty==0.8.10
 fakeredis
 freezegun
-tox
+tox==3.14.0
