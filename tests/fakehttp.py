@@ -105,12 +105,16 @@ class FakeHttp:
         for cb in funcs:
             self._callbacks[uri].append(cb)
 
-    def registerNoMoreRequests(self, uri):
+    def registerNoMoreRequests(self, uri, custom_exception=None):
         assert not self._error_on_exhausted, (
             "registerNoMoreRequests may not be used in a test together "
             "with registerErrorWhenRegisteredRequestsExhausted")
+
+        if not custom_exception:
+            custom_exception = Exception('No more expected requests are queued')
+
         def fail():
-            raise Exception('No more expected requests are queued')
+            raise custom_exception
         self._callbacks[uri].append(fail)
 
     def registerErrorWhenRegisteredRequestsExhausted(self):
