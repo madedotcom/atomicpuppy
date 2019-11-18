@@ -12,10 +12,19 @@ import yarl
 
 class FakeHttp:
 
-    def __init__(self, loop):
+    def __init__(self, loop, username=None, password=None):
         self._loop = loop
+
+        if username != None and password != None:
+            self.auth = username+password
+        else:
+            self.auth=None
+
         self._callbacks = defaultdict(deque)
         self._error_on_exhausted = False
+
+    def registerServerCredentials(self, username, password):
+        self.auth = username+password
 
     def registerJsonUris(self, registrations):
         for uri, fn in registrations.items():
@@ -31,12 +40,12 @@ class FakeHttp:
                 return fut
 
             resp = ClientResponse(
-                'GET', 
+                'GET',
                 yarl.URL(uri),
                 writer=Mock(),
                 timer=TimerNoop(),
                 continue100=None,
-                request_info=Mock(),           
+                request_info=Mock(),
                 traces=[],
                 loop=self._loop,
                 session=Mock()
@@ -46,6 +55,7 @@ class FakeHttp:
             }
 
             resp.status = status
+            resp.reason = Mock()
             resp.content = Mock()
             resp.content.read.side_effect = read
             resp.close = Mock()
@@ -68,7 +78,7 @@ class FakeHttp:
         def cb():
             fut = asyncio.Future(loop=self._loop)
             resp = ClientResponse(
-                'GET', 
+                'GET',
                 yarl.URL('foo'),
                 writer=Mock(),
                 timer=TimerNoop(),
@@ -95,12 +105,16 @@ class FakeHttp:
         for cb in funcs:
             self._callbacks[uri].append(cb)
 
-    def registerNoMoreRequests(self, uri):
+    def registerNoMoreRequests(self, uri, custom_exception=None):
         assert not self._error_on_exhausted, (
             "registerNoMoreRequests may not be used in a test together "
             "with registerErrorWhenRegisteredRequestsExhausted")
+
+        if not custom_exception:
+            custom_exception = Exception('No more expected requests are queued')
+
         def fail():
-            raise Exception('No more expected requests are queued')
+            raise custom_exception
         self._callbacks[uri].append(fail)
 
     def registerErrorWhenRegisteredRequestsExhausted(self):
@@ -123,11 +137,14 @@ class FakeHttp:
         reduced = functools.reduce(accumulate, deques, [])
         return len(reduced) == 0
 
-    @asyncio.coroutine
-    def respond(self, uri):
-        if(self._callbacks[uri]):
+    async def respond(self, uri, auth=None):
+        
+        if auth != self.auth:
+            return await self._make_response(uri, status=401)()
+
+        if self._callbacks[uri]:
             cb = self._callbacks[uri].popleft()
-            return cb()
+            return await cb()
         elif self._error_on_exhausted and self._noMoreRegisteredRequests():
             raise Exception("No more expected requests are queued for any URI")
         print("No response registered for uri "+uri)

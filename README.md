@@ -57,7 +57,7 @@ A `tox.ini` file is provided to run the tests with different versions of Python.
 
 To run the tests:
 
-1. Make sure you have the Python 3.5, 3.6 and 3.7 headers installed (for Ubuntu please refer to https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa)
+1. Make sure you have the Python 3.5, 3.6, 3.7 and 3.8 headers installed (for Ubuntu please refer to https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa)
 2. `pip install -r test-requirements.txt` from the root folder of the repository
 3. Run `tox` from the root folder of the repository
 

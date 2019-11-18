@@ -8,12 +8,12 @@ from uuid import UUID, uuid4
 from atomicpuppy.atomicpuppy import (
     StreamReader, SubscriptionInfoStore, SubscriptionConfig
 )
-from atomicpuppy import EventFinder, StreamNotFoundError
+from atomicpuppy import EventFinder, StreamNotFoundError, HttpClientError
 from .fakehttp import FakeHttp, SpyLog
 from .fakes import FakeRedisCounter
 
 from aiohttp.client import _RequestContextManager
-from concurrent.futures import TimeoutError
+from aiohttp import BasicAuth
 
 SCRIPT_PATH = os.path.dirname(__file__)
 
@@ -25,20 +25,25 @@ class FakeRequestContext(_RequestContextManager):
 
     async def __aenter__(self):
          self._resp = await self.coro
-         print(self.coro)
+         print(self._resp)
          self._resp.raise_for_status()
          return self._resp
 
 
 class FakeClientSession:
 
-    def __init__(self, fake_http):
+    def __init__(self, fake_http, username=None, password=None):
         self.http = fake_http
         self.closed = False
+        if username != None and password != None:
+            self.auth = username + password
+        else:
+            self.auth = None
 
     def get(self, uri, **kwargs):
         assert not self.closed
-        return FakeRequestContext(self.http.respond(uri))
+
+        return FakeRequestContext(self.http.respond(uri, self.auth))
 
     def close(self):
         self.closed = True
@@ -60,6 +65,8 @@ class EventFinderContext:
 
     def make_and_run_finder(
             self,
+            username=None,
+            password=None,
             sought_event_type='other_event',
             stream_to_look_in='otherstream',
             expect_exceptions=()):
@@ -75,8 +82,8 @@ class EventFinderContext:
             return evt.type == sought_event_type
 
         with patch('aiohttp.ClientSession') as mock:
-            mock.return_value = FakeClientSession(self.http)
-            finder = EventFinder({'atomicpuppy': config}, self.loop)
+            mock.return_value = FakeClientSession(self.http, username=username, password=password)
+            finder = EventFinder({'atomicpuppy': config}, self.loop, username, password)
             coro = finder.find_backwards(stream_to_look_in, predicate)
             self._log = SpyLog()
             with(self._log.capture()):
@@ -209,6 +216,53 @@ class When_the_sought_stream_is_not_there(EventFinderContext):
 
     def it_should_raise(self):
         assert isinstance(self.exc, StreamNotFoundError)
+
+class When_we_pass_valid_credentials_to_the_sought_stream(EventFinderContext):
+
+    _host = 'eventstore.local'
+    _port = 2113
+
+    def given_a_stream_with_two_events_and_credentials(self):
+        head_uri = (
+            'http://eventstore.local:2113/streams/otherstream/head/backward/2')
+        stream = SCRIPT_PATH + '/responses/two-events-otherstream.json'
+        self.http.registerServerCredentials('user', 'password')
+        self.http.registerJsonUri(head_uri, stream)
+        self.http.registerErrorWhenRegisteredRequestsExhausted()
+
+    def because_we_provide_credentials_and_call_find_backwards(self):
+        self.make_and_run_finder(
+            sought_event_type='other_event',
+            username='user',
+            password='password')
+
+    def it_should_fetch_the_first_matching_event(self):
+        assert self.evt.stream == 'otherstream'
+        assert self.evt.type == 'other_event'
+        assert self.evt.data == {'spam': '1'}
+
+class When_we_pass_invalid_credentials_to_the_sought_stream(EventFinderContext):
+
+    _host = 'eventstore.local'
+    _port = 2113
+
+    def given_a_stream_with_two_events(self):
+        head_uri = (
+            'http://eventstore.local:2113/streams/otherstream/head/backward/2')
+        stream = SCRIPT_PATH + '/responses/two-events-otherstream.json'
+        self.http.registerServerCredentials('user', 'password')
+        self.http.registerJsonUri(head_uri, stream)
+        self.http.registerErrorWhenRegisteredRequestsExhausted()
+
+    def because_we_provide_credentials_and_call_find_backwards(self):
+        self.make_and_run_finder(
+            sought_event_type='other_event',
+            username='wronguser',
+            password='wrongpassword',
+            expect_exceptions=(HttpClientError, ))
+
+    def it_should_raise_http_client_error(self):
+        assert isinstance(self.exc, HttpClientError)
 
 
 class StreamReaderContext:
@@ -685,7 +739,7 @@ class When_a_disconnection_error_occurs_during_fetch(StreamReaderContext):
 
 
 def fail_with_timeout():
-    raise TimeoutError()
+    raise asyncio.TimeoutError()
 
 
 class When_a_timeout_error_occurs_during_fetch(StreamReaderContext):

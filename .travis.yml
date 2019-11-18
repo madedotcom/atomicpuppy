@@ -3,9 +3,20 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 # command to install dependencies
 install:
   - "pip install ."
   - "pip install -r test-requirements.txt"
 # command to run tests
-script: run-contexts --verbose ./tests 2>/dev/null
+script: coverage run --branch --source atomicpuppy -m contexts --verbose ./tests
+deploy:
+  provider: pypi
+  user: __token__
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: madedotcom/atomicpuppy
+  skip_existing: true
+  password:
+    secure: IrdiCEil7JgbHRACGf6hMKlnIsEdfzPsCBj2O93CyBGQZX7nmUPyO1kfL8BzcTG2XXnyPAxz84F1LzvmevvwL/92F02F8cf3zrdOOamqhwjlg/y/EGa0wrrNHVG6Qs/wznwa/gCq9x6vlH0Vi8Hjy2YhucxP4nVdN/V7ThQIKqg++0VrHmZ6VUdsxg+Th6YkSsVbAcNzBJw0JGjHXY2bYPONxpAb4yV7D0ibh5mRzZUSpInkox4jo727EUISYy38EozkiDcdlZjEUxGX+GeLFTV5DmvMxFcFBC0+YRSQope6hDCOQ4e2DuIVeFC21iDQjXj5ABw7IT6X6n2BcUi+v9S1BVCcWnJNzM+maZIWVTw7MlKb4fqgZ0wP/E1oyMV7LPec6FXFiQup6dkXu15Kk7a171+jPdQq+pfocDwWL7cFWt0fCOnypm6hd2VkhO4zw8SskWX0GmC8Vh90qrWorTVFFpqBYNofK7gvVDLlaDYajlQzlxTt/AiDApJFqyQG//YQidcuJayZ9dxmtKVsHL2NLM3eqq+PD67wHwAxhF2x74epD1XBEdhAicS8DyqkGLPOnnt4/J3TcAsv+Dzj8sMHyifwtGykFoxBybCJ97CwZQcxNEUf2G3EiRNcmVkOEKIYTzXo5L/kyY6B/v0o+jW2b0Dyck8wUeAxQUc78YM=

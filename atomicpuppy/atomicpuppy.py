@@ -24,7 +24,6 @@ And the links on each page are named like this:
 """
 
 from collections import namedtuple, defaultdict
-from concurrent.futures import TimeoutError
 from enum import Enum
 from importlib import import_module
 from uuid import UUID
@@ -198,7 +197,7 @@ class Page:
 
     def _make_event(self, e):
         try:
-            data = json.loads(e["data"], encoding='UTF-8')
+            data = json.loads(e["data"])
         except KeyError:
             # Eventstore allows events with no `data` to be posted. If that
             # happens, then atomicpuppy doesn't know what to do
@@ -211,7 +210,7 @@ class Page:
                 e.get("eventType"), e.get("eventId"))
             return None
         try:
-            metadata = json.loads(e["metadata"], encoding='UTF-8')
+            metadata = json.loads(e["metadata"])
         except KeyError:
             metadata = {}
 
@@ -233,15 +232,14 @@ class StreamReader:
         self._subscriptions = subscriptions_store
         self.logger = logging.getLogger('atomicpuppy.stream-reader@{}/{}'.format(instance_name, stream_name))
 
-    @asyncio.coroutine
-    def start_consuming(self, once=False):
+    async def start_consuming(self, once=False):
         self._running = True
-        while(self._running):
+        while self._running:
             try:
-                yield from self.consume()
+                await self.consume()
                 if(once or not self._running):
                     break
-                yield from asyncio.sleep(5)
+                await asyncio.sleep(5)
             except UrlError as e:
                 self.logger.exception(
                     "Failed to make a request with uri %s",
@@ -252,6 +250,14 @@ class StreamReader:
                     "Received bad http response with status %d from %s",
                     e.status,
                     e.uri)
+
+                if e.status == 401:
+                    # Invalid credentials, all streams
+                    # will be affected
+                    self.logger.exception(
+                        "401 Authentication error is unrecoverable")
+                    raise
+
                 self.stop()
             except asyncio.CancelledError:
                 pass
@@ -261,44 +267,41 @@ class StreamReader:
         self.logger.info("Stopping")
         self._fetcher.stop()
 
-    @asyncio.coroutine
-    def consume(self):
+    async def consume(self):
         subscription = self._subscriptions.get(self._stream)
-        if(subscription.last_read > -1):
+        if subscription.last_read > -1:
             self.logger.debug(
                 "Last read event is %d - seeking last read on page %s",
                 subscription.last_read,
                 subscription.uri)
-            yield from self.seek_on_page(subscription.uri)
+            await self.seek_on_page(subscription.uri)
         else:
-            page = yield from self._fetcher.fetch(subscription.uri)
+            page = await self._fetcher.fetch(subscription.uri)
             last = page.get_link("last")
-            if(last):
+            if last:
                 self.logger.debug(
                     "No last read event, skipping to last page %s",
                     last)
-                yield from self._walk_forwards(last)
+                await self._walk_forwards(last)
             else:
                 self.logger.debug(
                     "No last read event, yielding events from this page %s",
                     subscription.uri)
-                yield from self._raise_page_events(page)
+                await self._raise_page_events(page)
 
-    @asyncio.coroutine
-    def seek_on_page(self, uri):
+    async def seek_on_page(self, uri):
         self.logger.debug("Looking for last read event on page %s", uri)
-        page = yield from self._fetcher.fetch(uri)
-        yield from self._seek_to_last_read(page)
+        page = await self._fetcher.fetch(uri)
+        return await self._seek_to_last_read(page)
 
-    @asyncio.coroutine
-    def _walk_forwards(self, prev_uri):
+    async def _walk_forwards(self, prev_uri):
         uri = prev_uri
         while True:
             self.logger.debug("walking forwards from %s", uri)
-            page = yield from self._fetcher.fetch(uri)
+            page = await self._fetcher.fetch(uri)
             if not page.is_empty():
                 self.logger.debug("raising events from page %s", uri)
-                yield from self._raise_page_events(page)
+                await self._raise_page_events(page)
             prev_uri = page.get_link("previous")
             if not prev_uri:
                 # loop until there's a prev link, otherwise it means
@@ -313,26 +316,24 @@ class StreamReader:
             uri = prev_uri
 
 
-    @asyncio.coroutine
-    def _raise_page_events(self, page):
+    async def _raise_page_events(self, page):
         subscription = self._subscriptions.get(self._stream)
         last_read = subscription.last_read
         self.logger.debug("Raising events on %s since %s", self._stream, last_read)
         for evt in page.iter_events_since(last_read):
             self.logger.debug("Raising %s", evt)
-            yield from self._queue.put(evt)
+            await self._queue.put(evt)
             self._subscriptions.update_sequence(self._stream, evt.sequence)
 
-    @asyncio.coroutine
-    def _seek_to_last_read(self, page):
+    async def _seek_to_last_read(self, page):
         subscription = self._subscriptions.get(self._stream)
         if page.is_event_present(subscription.last_read):
             self.logger.debug(
                 "Found last read event on current page, raising events")
-            yield from self._raise_page_events(page)
+            await self._raise_page_events(page)
             prev = page.get_link("previous")
             if prev:
-                yield from self._walk_forwards(prev)
+                await self._walk_forwards(prev)
                 return
             else:
                 self.logger.debug("No previous link")
@@ -342,9 +343,9 @@ class StreamReader:
         # and we should stop doing it.  Conceivably this might be hiding other
         # bugs so needs a bit of care to fix...
         nxt = page.get_link("next")
-        if(nxt):
+        if nxt:
             self.logger.debug('Seeking back to %s', nxt)
-            yield from self.seek_on_page(nxt)
+            await self.seek_on_page(nxt)
 
 
 class EventFinder:
@@ -438,9 +439,8 @@ class StreamFetcher:
             return
         fut.set_result(result)
 
-    @asyncio.coroutine
-    def sleep(self, delay):
-        if(self._nosleep):
+    async def sleep(self, delay):
+        if self._nosleep:
             return
         self._sleep = asyncio.futures.Future(loop=self._loop)
 
@@ -450,7 +450,7 @@ class StreamFetcher:
             self._sleep, None)
 
         self._log.debug("retrying fetch in %d seconds", delay)
-        yield from self._sleep
+        return await self._sleep
 
     async def fetch(self, uri):
         sleep_times = self.sleeps(uri)
@@ -483,10 +483,11 @@ class StreamFetcher:
             except (aiohttp.ClientError) as e:
                 self.log(e, uri)
             # Http timeout? Log and sleep
-            except TimeoutError as e:
+            except asyncio.TimeoutError as e:
                 self.log(e, uri)
 
             await self.sleep(s)
+
 
 def _ensure_coroutine_function(func):
     """Return a coroutine function.
@@ -498,10 +499,9 @@ def _ensure_coroutine_function(func):
     if asyncio.iscoroutinefunction(func):
         return func
     else:
-        @asyncio.coroutine
-        def coroutine_function(evt):
-            func(evt)
-            yield
+        async def coroutine_function(evt):
+            return func(evt)
+
         return coroutine_function
 
 
@@ -518,18 +518,16 @@ class EventRaiser:
         self._is_running = False
         self._logger.info("Stopping")
 
-    @asyncio.coroutine
-    def start(self):
+    async def start(self):
         self._is_running = True
-        while(self._loop.is_running() and self._is_running):
+        while self._loop.is_running() and self._is_running:
+
             try:
-                msg = yield from asyncio.wait_for(self._queue.get(),
-                                                  timeout=1,
-                                                  loop=self._loop)
+                msg = await asyncio.wait_for(self._queue.get(), timeout=1)
                 if not msg:
                     continue
                 coro = _ensure_coroutine_function(self._callback)
-                yield from coro(msg)
+                await coro(msg)
                 try:
                     self._counter[msg.stream] = msg.sequence
                 except pybreaker.CircuitBreakerError:
@@ -539,23 +537,27 @@ class EventRaiser:
             except RejectedMessageException:
                 self._logger.warn("%s message %s was rejected and has not been processed",
                                   msg.type, msg.id)
-            except(TimeoutError):
+            except asyncio.TimeoutError:
                 pass
-            except:
-                self._logger.exception("Failed to process message %s", msg)
+            except Exception as e:
+                if 'msg' in locals():
+                    self._logger.exception("Failed to process message %s", msg)
+                else:
+                    # Happens when the wait_for failed and msg was not poplated
+                    self._logger.debug(str(e))
 
-    @asyncio.coroutine
-    def consume_events(self):
+
+
+
+    async def consume_events(self):
         self._is_running = True
-        while(self._loop.is_running() and self._is_running):
+        while self._loop.is_running() and self._is_running:
             try:
-                msg = yield from asyncio.wait_for(self._queue.get(),
-                                                  timeout=1,
-                                                  loop=self._loop)
+                msg = await asyncio.wait_for(self._queue.get(), timeout=1)
                 if not msg:
                     self._is_running = False
                     return
-                yield from _ensure_coroutine_function(self._callback)(msg)
+                await _ensure_coroutine_function(self._callback)(msg)
                 try:
                     self._counter[msg.stream] = msg.sequence
                 except pybreaker.CircuitBreakerError:
@@ -565,7 +567,7 @@ class EventRaiser:
             except RejectedMessageException:
                 self._logger.warn("%s message %s was rejected and has not been processed",
                                   msg.type, msg.id)
-            except(TimeoutError):
+            except asyncio.TimeoutError:
                 self._is_running = False
             except:
                 self._logger.exception("Failed to process message %s", msg)
