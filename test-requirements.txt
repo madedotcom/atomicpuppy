@@ -3,4 +3,4 @@ HTTPretty==0.8.10
 fakeredis
 freezegun
 tox
-coverage
+coverage==4.5.4
