@@ -27,11 +27,19 @@ import aiohttp
 
 class EventFinder:
 
-    def __init__(self, cfg_file, loop=None):
+    def __init__(self, cfg_file, loop=None, username=None, password=None):
         """
         cfg_file: dictionary or filename or yaml text
         """
         self._config = StreamConfigReader().read(cfg_file)
+
+        self._session_auth = None
+        if username != None and password != None:
+            self._session_auth = aiohttp.BasicAuth(
+                    login=username,
+                    password=password,
+                    encoding='utf-8')
+
         self._loop = loop or asyncio.get_event_loop()
 
     async def find_backwards(self, stream, predicate, predicate_label='predicate'):
@@ -39,7 +47,8 @@ class EventFinder:
                 read_timeout=self._config.timeout,
                 conn_timeout=self._config.timeout,
                 raise_for_status=True,
-                loop=self._loop) as session:
+                loop=self._loop,
+                auth=self._session_auth) as session:
 
             instance_name = (
                 self._config.instance_name + ' find_backwards {}'.format(stream)
@@ -64,7 +73,7 @@ class EventFinder:
 
 class AtomicPuppy:
 
-    def __init__(self, cfg_file, callback, loop=None):
+    def __init__(self, cfg_file, callback, loop=None, username=None, password=None):
         """
         cfg_file: dictionary or filename or yaml text
         """
@@ -72,11 +81,17 @@ class AtomicPuppy:
         self.callback = callback
         self._loop = loop or asyncio.get_event_loop()
         self._queue = asyncio.Queue(maxsize=20, loop=self._loop)
+
+        auth = None
+        if username != None and password != None:
+            auth = aiohttp.BasicAuth(login=username, password=password, encoding='utf-8')
+
         self.session = aiohttp.ClientSession(
                 read_timeout=self.config.timeout,
                 conn_timeout=self.config.timeout,
                 raise_for_status=True,
-                loop=self._loop)
+                loop=self._loop,
+                auth=auth)
 
     def start(self, run_once=False):
         c = self.counter = self.config.counter_factory()
