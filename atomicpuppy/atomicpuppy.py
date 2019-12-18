@@ -747,9 +747,11 @@ class EventStoreJsonEncoder(json.JSONEncoder):
 
 class EventPublisher:
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, username=None, password=None):
         self._es_url = '{}:{}'.format(host, port)
         self._logger = logging.getLogger("EventPublisher")
+        self.username = username
+        self.password = password
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
@@ -797,12 +799,13 @@ class EventPublisher:
                     "metadata": event.metadata,
                 },
             )
-
+        auth = (self.username, self.password) if self.username and self.password else () 
         r = requests.post(
             uri,
             headers=headers,
             data=EventStoreJsonEncoder().encode(data),
             timeout=0.5,
+            auth=auth,
         )
 
         self._logger.debug(

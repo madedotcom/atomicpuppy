@@ -252,3 +252,67 @@ class When_multiple_events_for_different_streams_are_posted_to_eventstore_in_bat
 
     def it_should_raise_the_exception(self):
         assert self.invalid_data_exception_raised
+
+
+class When_a_message_is_posted_with_username_and_password:
+
+    stream = str(uuid4())
+    event_id = str(uuid4())
+    _host = 'fakehost'
+    _port = 42
+    _username = 'username'
+    _password = 'super_password'
+
+    def given_a_publisher(self):
+        self.publisher = EventPublisher(
+            self._host, self._port, self._username, self._password
+            )
+
+    @httpretty.activate
+    def because_an_event_is_published_on_a_stream(self):
+        httpretty.register_uri(
+            httpretty.POST,
+            "http://{}:{}/streams/{}".format(self._host, self._port, self.stream),
+            body='{}')
+
+        data = {'foo': 'bar'}
+        metadata = {'lorem': 'ipsum'}
+        evt = Event(self.event_id, 'my-event-type', data, self.stream, None, metadata)
+        self.publisher.post(evt)
+        self.response_body = json.loads(httpretty.last_request().body.decode())[0]
+
+    def request_should_have_basic_auth_in_headers(self):
+        headers = httpretty.last_request().headers
+        assert 'Authorization' in headers
+        assert 'Basic ' in headers['Authorization']
+        
+
+class When_a_message_is_posted_without_password:
+
+    stream = str(uuid4())
+    event_id = str(uuid4())
+    _host = 'fakehost'
+    _port = 42
+    _username = 'username'
+
+    def given_a_publisher(self):
+        self.publisher = EventPublisher(
+            self._host, self._port, self._username, None
+            )
+
+    @httpretty.activate
+    def because_an_event_is_published_on_a_stream(self):
+        httpretty.register_uri(
+            httpretty.POST,
+            "http://{}:{}/streams/{}".format(self._host, self._port, self.stream),
+            body='{}')
+
+        data = {'foo': 'bar'}
+        metadata = {'lorem': 'ipsum'}
+        evt = Event(self.event_id, 'my-event-type', data, self.stream, None, metadata)
+        self.publisher.post(evt)
+        self.response_body = json.loads(httpretty.last_request().body.decode())[0]
+
+    def request_should_not_have_auth_in_headers(self):
+        headers = httpretty.last_request().headers
+        assert 'Authorization' not in headers
