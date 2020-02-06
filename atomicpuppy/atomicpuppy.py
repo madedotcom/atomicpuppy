@@ -250,6 +250,14 @@ class StreamReader:
                     "Received bad http response with status %d from %s",
                     e.status,
                     e.uri)
+
+                if e.status == 401:
+                    # Invalid credentials, all streams
+                    # will be affected
+                    self.logger.exception(
+                        "401 Authentication error is unrecoverable")
+                    raise
+
                 self.stop()
             except asyncio.CancelledError:
                 pass
@@ -513,6 +521,7 @@ class EventRaiser:
     async def start(self):
         self._is_running = True
         while self._loop.is_running() and self._is_running:
+
             try:
                 msg = await asyncio.wait_for(self._queue.get(), timeout=1)
                 if not msg:
@@ -530,8 +539,15 @@ class EventRaiser:
                                   msg.type, msg.id)
             except asyncio.TimeoutError:
                 pass
-            except:
-                self._logger.exception("Failed to process message %s", msg)
+            except Exception as e:
+                if 'msg' in locals():
+                    self._logger.exception("Failed to process message %s", msg)
+                else:
+                    # Happens when the wait_for failed and msg was not poplated
+                    self._logger.debug(str(e))
+
+
+
 
     async def consume_events(self):
         self._is_running = True
@@ -731,9 +747,11 @@ class EventStoreJsonEncoder(json.JSONEncoder):
 
 class EventPublisher:
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, username=None, password=None):
         self._es_url = '{}:{}'.format(host, port)
         self._logger = logging.getLogger("EventPublisher")
+        self.username = username
+        self.password = password
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
@@ -781,12 +799,13 @@ class EventPublisher:
                     "metadata": event.metadata,
                 },
             )
-
+        auth = (self.username, self.password) if self.username and self.password else () 
         r = requests.post(
             uri,
             headers=headers,
             data=EventStoreJsonEncoder().encode(data),
             timeout=0.5,
+            auth=auth,
         )
 
         self._logger.debug(
