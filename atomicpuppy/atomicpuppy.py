@@ -35,7 +35,7 @@ import logging
 import platform
 import random
 
-from retrying import retry
+from tenacity import retry, wait_exponential, stop_after_delay
 import pybreaker
 import redis
 import requests
@@ -551,6 +551,7 @@ class EventRaiser:
 
     async def consume_events(self):
         self._is_running = True
+        msg = None
         while self._loop.is_running() and self._is_running:
             try:
                 msg = await asyncio.wait_for(self._queue.get(), timeout=1)
@@ -593,7 +594,10 @@ class RedisCounter(EventCounter):
         self._instance_name = instance
         self._logger = logging.getLogger(__name__)
 
-    @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=60000)
+    @retry(
+        wait=wait_exponential(multiplier=1000, max=10000),
+        stop=stop_after_delay(30000)
+    )
     def __getitem__(self, stream):
         self._logger.debug("Fetching last read event for stream "+stream)
         key = self._key(stream)
@@ -753,15 +757,21 @@ class EventPublisher:
         self.username = username
         self.password = password
 
-    @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
-           retry_on_result=lambda r: r.status_code >= 500)
+    @retry(
+        wait=wait_exponential(multiplier=1000, max=10000),
+        stop=stop_after_delay(30000),
+        retry=lambda r: r.result().status_code >= 500
+    )
     def post(self, event, correlation_id=None):
         if correlation_id:
             event.correlation_id = correlation_id
         return self.batch_create([event])
 
-    @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
-           retry_on_result=lambda r: r.status_code >= 500)
+    @retry(
+        wait=wait_exponential(multiplier=1000, max=10000),
+        stop=stop_after_delay(30000),
+        retry=lambda r: r.result().status_code >= 500
+    )
     def post_multiple(self, events):
         return self.batch_create(events)
 

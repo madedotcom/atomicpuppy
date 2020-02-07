@@ -7,7 +7,7 @@ install_requires = [
     "pybreaker",
     "PyYAML",
     "redis",
-    "retrying",
+    "tenacity",
     "requests",
 ]
 
