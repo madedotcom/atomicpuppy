@@ -755,17 +755,17 @@ class EventPublisher:
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
-    def post(self, event, correlation_id=None):
+    def post(self, event, correlation_id=None, timeout=0.5):
         if correlation_id:
             event.correlation_id = correlation_id
-        return self.batch_create([event])
+        return self.batch_create([event], timeout=timeout)
 
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=30000,
            retry_on_result=lambda r: r.status_code >= 500)
-    def post_multiple(self, events):
-        return self.batch_create(events)
+    def post_multiple(self, events, timeout=0.5):
+        return self.batch_create(events, timeout=timeout)
 
-    def batch_create(self, events):
+    def batch_create(self, events, timeout=0.5):
         if not all(events[0].stream == event.stream for event in events):
             raise InvalidDataException("All events in the POST have to be for the same stream")
 
@@ -804,7 +804,7 @@ class EventPublisher:
             uri,
             headers=headers,
             data=EventStoreJsonEncoder().encode(data),
-            timeout=0.5,
+            timeout=timeout,
             auth=auth,
         )
 
